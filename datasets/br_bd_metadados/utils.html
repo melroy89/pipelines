@@ -127,7 +127,30 @@ def get_temporal_coverage_list(temporal_coverage_field: list) -&gt; list:
         sub = get_interval_range(start, end, delta, frequency)
         temporal_coverage_list.append(sub)
 
-    return flatten_list(temporal_coverage_list)</code></pre>
+    return flatten_list(temporal_coverage_list)
+
+
+def check_missing_metadata(df: pd.DataFrame) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;
+    Verifica se há valores faltando em cada coluna de um DataFrame e armazena essa informação em uma nova coluna.
+
+    Args:
+        df (pandas.DataFrame): O DataFrame a ser verificado.
+
+    Returns:
+        pandas.DataFrame: O DataFrame original com uma nova coluna chamada &#39;missing_metadata&#39;, que contém valores booleanos indicando se há valores nulos em cada linha.
+    &#34;&#34;&#34;
+    # Cria uma nova coluna com valor padrão &#39;False&#39;
+    df[&#34;missing_metadata&#34;] = False
+
+    # Verifica se há valores nulos em cada coluna
+    for col in df.loc[:, df.columns != &#34;outdated&#34;].columns:
+        if df[col].isnull().values.any():
+            # Se houver valores nulos, atualiza a coluna &#39;missing_metadata&#39; para &#39;True&#39;
+            df[&#34;missing_metadata&#34;] = True
+
+    # Retorna o DataFrame atualizado
+    return df</code></pre>
 </details>
 </section>
 <section>
@@ -137,6 +160,48 @@ def get_temporal_coverage_list(temporal_coverage_field: list) -&gt; list:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="pipelines.datasets.br_bd_metadados.utils.check_missing_metadata"><code class="name flex">
+<span>def <span class="ident">check_missing_metadata</span></span>(<span>df: pandas.core.frame.DataFrame) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verifica se há valores faltando em cada coluna de um DataFrame e armazena essa informação em uma nova coluna.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>pandas.DataFrame</code></dt>
+<dd>O DataFrame a ser verificado.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pandas.DataFrame</code></dt>
+<dd>O DataFrame original com uma nova coluna chamada 'missing_metadata', que contém valores booleanos indicando se há valores nulos em cada linha.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_missing_metadata(df: pd.DataFrame) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;
+    Verifica se há valores faltando em cada coluna de um DataFrame e armazena essa informação em uma nova coluna.
+
+    Args:
+        df (pandas.DataFrame): O DataFrame a ser verificado.
+
+    Returns:
+        pandas.DataFrame: O DataFrame original com uma nova coluna chamada &#39;missing_metadata&#39;, que contém valores booleanos indicando se há valores nulos em cada linha.
+    &#34;&#34;&#34;
+    # Cria uma nova coluna com valor padrão &#39;False&#39;
+    df[&#34;missing_metadata&#34;] = False
+
+    # Verifica se há valores nulos em cada coluna
+    for col in df.loc[:, df.columns != &#34;outdated&#34;].columns:
+        if df[col].isnull().values.any():
+            # Se houver valores nulos, atualiza a coluna &#39;missing_metadata&#39; para &#39;True&#39;
+            df[&#34;missing_metadata&#34;] = True
+
+    # Retorna o DataFrame atualizado
+    return df</code></pre>
+</details>
+</dd>
 <dt id="pipelines.datasets.br_bd_metadados.utils.classify_frequency"><code class="name flex">
 <span>def <span class="ident">classify_frequency</span></span>(<span>interval)</span>
 </code></dt>
@@ -294,6 +359,7 @@ def get_temporal_coverage_list(temporal_coverage_field: list) -&gt; list:
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="pipelines.datasets.br_bd_metadados.utils.check_missing_metadata" href="#pipelines.datasets.br_bd_metadados.utils.check_missing_metadata">check_missing_metadata</a></code></li>
 <li><code><a title="pipelines.datasets.br_bd_metadados.utils.classify_frequency" href="#pipelines.datasets.br_bd_metadados.utils.classify_frequency">classify_frequency</a></code></li>
 <li><code><a title="pipelines.datasets.br_bd_metadados.utils.flatten_list" href="#pipelines.datasets.br_bd_metadados.utils.flatten_list">flatten_list</a></code></li>
 <li><code><a title="pipelines.datasets.br_bd_metadados.utils.get_interval_range" href="#pipelines.datasets.br_bd_metadados.utils.get_interval_range">get_interval_range</a></code></li>

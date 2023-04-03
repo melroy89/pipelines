@@ -34,19 +34,20 @@ Tasks for br_twitter
 # pylint: disable=invalid-name,too-many-nested-blocks,too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 import os
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
 
-from prefect import task
-import requests
 import pandas as pd
+import requests
+from dateutil.relativedelta import relativedelta
+from prefect import task
 
+from pipelines.constants import constants
+from pipelines.datasets.br_bd_metadados.utils import (
+    get_temporal_coverage_list,
+    check_missing_metadata,
+)
 from pipelines.utils.utils import (
     log,
 )
-from pipelines.datasets.br_bd_metadados.utils import (
-    get_temporal_coverage_list,
-)
-from pipelines.constants import constants
 
 
 # pylint: disable=C0103
@@ -324,23 +325,37 @@ def crawler_tables():
         for resource in dataset[&#34;resources&#34;]:
             if resource[&#34;resource_type&#34;] == &#34;bdm_table&#34;:
 
+                date_created = None
                 if &#34;created&#34; in resource:
                     if resource[&#34;created&#34;] is not None:
                         date_created = resource[&#34;created&#34;][0:10]
-                else:
-                    date_created = None
 
+                metadata_created, data_created, release_created = &#34;&#34;, &#34;&#34;, &#34;&#34;
+                if &#34;last_updated&#34; in resource:
+                    if resource[&#34;last_updated&#34;].get(&#34;metadata&#34;) is not None:
+                        metadata_created = str(
+                            resource[&#34;last_updated&#34;].get(&#34;metadata&#34;)
+                        ).replace(&#34;/&#34;, &#34;-&#34;)[0:10]
+
+                    if resource[&#34;last_updated&#34;].get(&#34;data&#34;) is not None:
+                        data_created = str(
+                            resource[&#34;last_updated&#34;].get(&#34;data&#34;)
+                        ).replace(&#34;/&#34;, &#34;-&#34;)[0:10]
+
+                    if resource[&#34;last_updated&#34;].get(&#34;release&#34;) is not None:
+                        release_created = str(
+                            resource[&#34;last_updated&#34;].get(&#34;release&#34;)
+                        ).replace(&#34;/&#34;, &#34;-&#34;)[0:10]
+
+                date_last_modified = None
                 if &#34;metadata_modified&#34; in resource:
                     if resource[&#34;metadata_modified&#34;] is not None:
                         date_last_modified = resource[&#34;metadata_modified&#34;][0:10]
-                else:
-                    date_last_modified = None
 
+                number_rows = 0
                 if &#34;number_rows&#34; in resource:
                     if resource[&#34;number_rows&#34;] is not None:
                         number_rows = int(resource[&#34;number_rows&#34;])
-                else:
-                    number_rows = 0
 
                 # indicator for outdated
                 outdated = None
@@ -384,6 +399,7 @@ def crawler_tables():
                                 delta = 1000
 
                             number_dashes = upper_temporal_coverage.count(&#34;-&#34;)
+                            diff = 0
                             if number_dashes == 0:
                                 upper_temporal_coverage = datetime.strptime(
                                     upper_temporal_coverage, &#34;%Y&#34;
@@ -408,6 +424,7 @@ def crawler_tables():
                 resources.append(
                     {
                         &#34;dataset_id&#34;: dataset.get(&#34;id&#34;),
+                        &#34;dataset_name&#34;: dataset.get(&#34;name&#34;),
                         &#34;id&#34;: resource.get(&#34;id&#34;),
                         &#34;name&#34;: resource.get(&#34;name&#34;),
                         &#34;date_created&#34;: date_created,
@@ -419,10 +436,16 @@ def crawler_tables():
                         &#34;number_rows&#34;: number_rows,
                         &#34;number_columns&#34;: len(resource.get(&#34;columns&#34;)),
                         &#34;outdated&#34;: outdated,
+                        &#34;metadata&#34;: metadata_created,
+                        &#34;data&#34;: data_created,
+                        &#34;release&#34;: release_created,
+                        &#34;published_by&#34;: resource.get(&#34;published_by&#34;).get(&#34;name&#34;),
+                        &#34;cleaned_by&#34;: resource.get(&#34;data_cleaned_by&#34;).get(&#34;name&#34;),
                     }
                 )
 
     df = pd.DataFrame.from_dict(resources)
+    df = check_missing_metadata(df)
 
     os.system(&#34;mkdir -p /tmp/data/&#34;)
     df.to_csv(&#34;/tmp/data/tables.csv&#34;, index=False)
@@ -898,23 +921,37 @@ def crawler_tables():
         for resource in dataset[&#34;resources&#34;]:
             if resource[&#34;resource_type&#34;] == &#34;bdm_table&#34;:
 
+                date_created = None
                 if &#34;created&#34; in resource:
                     if resource[&#34;created&#34;] is not None:
                         date_created = resource[&#34;created&#34;][0:10]
-                else:
-                    date_created = None
 
+                metadata_created, data_created, release_created = &#34;&#34;, &#34;&#34;, &#34;&#34;
+                if &#34;last_updated&#34; in resource:
+                    if resource[&#34;last_updated&#34;].get(&#34;metadata&#34;) is not None:
+                        metadata_created = str(
+                            resource[&#34;last_updated&#34;].get(&#34;metadata&#34;)
+                        ).replace(&#34;/&#34;, &#34;-&#34;)[0:10]
+
+                    if resource[&#34;last_updated&#34;].get(&#34;data&#34;) is not None:
+                        data_created = str(
+                            resource[&#34;last_updated&#34;].get(&#34;data&#34;)
+                        ).replace(&#34;/&#34;, &#34;-&#34;)[0:10]
+
+                    if resource[&#34;last_updated&#34;].get(&#34;release&#34;) is not None:
+                        release_created = str(
+                            resource[&#34;last_updated&#34;].get(&#34;release&#34;)
+                        ).replace(&#34;/&#34;, &#34;-&#34;)[0:10]
+
+                date_last_modified = None
                 if &#34;metadata_modified&#34; in resource:
                     if resource[&#34;metadata_modified&#34;] is not None:
                         date_last_modified = resource[&#34;metadata_modified&#34;][0:10]
-                else:
-                    date_last_modified = None
 
+                number_rows = 0
                 if &#34;number_rows&#34; in resource:
                     if resource[&#34;number_rows&#34;] is not None:
                         number_rows = int(resource[&#34;number_rows&#34;])
-                else:
-                    number_rows = 0
 
                 # indicator for outdated
                 outdated = None
@@ -958,6 +995,7 @@ def crawler_tables():
                                 delta = 1000
 
                             number_dashes = upper_temporal_coverage.count(&#34;-&#34;)
+                            diff = 0
                             if number_dashes == 0:
                                 upper_temporal_coverage = datetime.strptime(
                                     upper_temporal_coverage, &#34;%Y&#34;
@@ -982,6 +1020,7 @@ def crawler_tables():
                 resources.append(
                     {
                         &#34;dataset_id&#34;: dataset.get(&#34;id&#34;),
+                        &#34;dataset_name&#34;: dataset.get(&#34;name&#34;),
                         &#34;id&#34;: resource.get(&#34;id&#34;),
                         &#34;name&#34;: resource.get(&#34;name&#34;),
                         &#34;date_created&#34;: date_created,
@@ -993,10 +1032,16 @@ def crawler_tables():
                         &#34;number_rows&#34;: number_rows,
                         &#34;number_columns&#34;: len(resource.get(&#34;columns&#34;)),
                         &#34;outdated&#34;: outdated,
+                        &#34;metadata&#34;: metadata_created,
+                        &#34;data&#34;: data_created,
+                        &#34;release&#34;: release_created,
+                        &#34;published_by&#34;: resource.get(&#34;published_by&#34;).get(&#34;name&#34;),
+                        &#34;cleaned_by&#34;: resource.get(&#34;data_cleaned_by&#34;).get(&#34;name&#34;),
                     }
                 )
 
     df = pd.DataFrame.from_dict(resources)
+    df = check_missing_metadata(df)
 
     os.system(&#34;mkdir -p /tmp/data/&#34;)
     df.to_csv(&#34;/tmp/data/tables.csv&#34;, index=False)
